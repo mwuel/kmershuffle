@@ -9,4 +9,6 @@ The script can be run using the following command:
 python kmershuffle.py annotations.gtf bindingsites.bed sequences.fasta k=3 shufflings=100
 ```
 
-Parameters k and shufflings are optional but can be changed as desired. K-mer length should, however be chosen according to site lengths (e.g k <= site length).
+Parameters k and shufflings are optional but can be changed as desired. K-mer length should, however be chosen according to site lengths (e.g k <= site length). Binding sites can also be given in GFF-format. 
+
+To test the script, a sample dataset has been uploaded to the repository. It takes the data from the following publication: https://doi.org/10.1111/tpj.16601
