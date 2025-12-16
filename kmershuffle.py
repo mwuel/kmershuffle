@@ -35,31 +35,18 @@ def count_kmers(seqs, k):
      for seq in seqs:
         # rna = seq.replace("T", "U").upper().strip()
         for i in range(len(seq)-k+1):
-            if seq[i:k] not in kmers.keys():
+            if seq[i:i+k] not in kmers.keys():
                 kmers[seq[i:i+k]] = 0
 
             kmers[seq[i:i+k]] += 1
      return kmers
 
-df = pd.read_table(gff, names=["chr",2,'feature',"start",'stop',6,"strand",8,'attr'])
-new = df['attr'].str.split("\"", n=2, expand=True)
-df["gene"] = new[1]
-df.drop(columns=['attr'], inplace=True)
-genes = df.groupby(["gene", 'strand'],as_index=False).agg({
-    'chr': 'min',
-    'start': 'min',
-    'stop': 'max'
-})
-genes = genes[genes["gene"].str.fullmatch(r'(AT\dG\d{5})')==True].iloc[:, [2,3,4,1,0]]
-
-site_length = 0
-
-bind_sites = pybedtools.BedTool(bed)
-bind_sites_small = []
-dd = defaultdict(list)
-kmers = {}
-seqs = bind_sites.sequence(fi=fasta)
 with tempfile.TemporaryDirectory() as tmpdir:
+    bind_sites = pybedtools.BedTool(bed)
+    bind_sites_small = []
+    dd = defaultdict(list)
+    kmers = {}
+    seqs = pybedtools.BedTool(bed).sequence(fi=fasta)
     seqs.save_seqs(f"{tmpdir}/binding_features.fa")
     with pysam.FastxFile(f"{tmpdir}/binding_features.fa") as fh:
         site_length = len(fh.__next__().sequence)
@@ -67,10 +54,24 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     for feature in bind_sites:
         median = int(np.median(np.arange(feature.start, feature.stop)))
-        bind_sites_small.append((feature.chrom, median, median))
+        bind_sites_small.append((feature.chrom, median, median,"","", feature.strand))
+    print(gff)
+    df = pybedtools.BedTool(gff).intersect(bind_sites_small,u=True, s=True).to_dataframe()
+    new = df['attributes'].str.split("\"", n=2, expand=True)
+    df["attributes"] = new[1]
+    genes = df.groupby(["attributes", 'strand'],as_index=False).agg({
+        'seqname': 'min',
+        'start': 'min',
+        'end': 'max',
+        'feature': 'min',
+        'source': 'max',
+        'score': 'max',
+        'frame': 'max'
 
-    bind_features = pybedtools.BedTool.from_dataframe(genes[genes["gene"].str.fullmatch(r'(AT\dG\d{5})')==True]).intersect(bind_sites_small,u=True)
-    count_features = bind_features.intersect(bind_sites_small, c=True)
+    })
+    genes = genes[genes["attributes"].str.fullmatch(r'(AT\dG\d{5})')==True].iloc[:, [2,6,5,3,4,7,1,8,0]]
+    x = pybedtools.BedTool.from_dataframe(genes)
+    count_features = x.intersect(bind_sites_small,c=True,s=True)
 
     for shuffle in range(shufflings):
         print(f"Shuffle: {shuffle+1}")
