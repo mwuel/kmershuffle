@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     for shuffle in range(shufflings):
         print(f"Shuffle: {shuffle+1}")
-        seqs = pybedtools.BedTool(list(np.concatenate([[(feature.chrom, site_start, site_start+site_length) for site_start in np.random.randint(feature.start, feature.stop+1, size=feature.count)] for feature in count_features]))).sequence(fi="TAIR10_chr_all.fa")
+        seqs = pybedtools.BedTool(list(np.concatenate([[(feature.chrom, site_start, site_start+site_length) for site_start in np.random.randint(feature.start, feature.stop+1, size=feature.count)] for feature in count_features]))).sequence(fi=fasta)
         seqs.save_seqs(f"{tmpdir}/binding_features{shuffle}.fa")
         with pysam.FastxFile(f"{tmpdir}/binding_features{shuffle}.fa") as fh:
                 shuffled_kmers = count_kmers([f.sequence for f in fh],k)
