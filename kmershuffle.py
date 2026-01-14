@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
     bind_sites_small = []
     dd = defaultdict(list)
     kmers = {}
-    seqs = pybedtools.BedTool(bed).sequence(fi=fasta)
+    seqs = pybedtools.BedTool(bed).sequence(fi=fasta,s=True)
     seqs.save_seqs(f"{tmpdir}/binding_features.fa")
     with pysam.FastxFile(f"{tmpdir}/binding_features.fa") as fh:
         site_length = len(fh.__next__().sequence)
@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     for shuffle in range(shufflings):
         print(f"Shuffle: {shuffle+1}")
-        seqs = pybedtools.BedTool(list(np.concatenate([[(feature.chrom, site_start, site_start+site_length) for site_start in np.random.randint(feature.start, feature.stop+1, size=feature.count)] for feature in count_features]))).sequence(fi=fasta)
+        seqs = pybedtools.BedTool(list(np.concatenate([[(feature.chrom, site_start, site_start+site_length) for site_start in np.random.randint(feature.start, feature.stop+1, size=feature.count)] for feature in count_features]))).sequence(fi=fasta,s=True)
         seqs.save_seqs(f"{tmpdir}/binding_features{shuffle}.fa")
         with pysam.FastxFile(f"{tmpdir}/binding_features{shuffle}.fa") as fh:
                 shuffled_kmers = count_kmers([f.sequence for f in fh],k)
@@ -88,4 +88,3 @@ for key in kmers.keys():
 
 stats = pd.DataFrame.from_dict(kmer_stats, orient="index", columns=["count","mean shufflings", "std shufflings", "z-score"])
 stats.to_csv("kmer_stats.csv")
-
